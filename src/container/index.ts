@@ -1,5 +1,6 @@
 import { OneCLIError, OneCLIRequestError, toOneCLIError } from "../errors.js";
 import { writeCaCertificate, buildCombinedCaBundle } from "./ca.js";
+import { writeCredentialStub } from "./credentials.js";
 import type {
   ApplyContainerConfigOptions,
   ContainerConfig,
@@ -148,6 +149,17 @@ export class ContainerClient {
         // DENO_CERT: Deno does not respect SSL_CERT_FILE, it has its own env var
         args.push("-e", "DENO_CERT=/tmp/onecli-combined-ca.pem");
         args.push("-v", `${combinedPath}:/tmp/onecli-combined-ca.pem:ro`);
+      }
+    }
+
+    // Write credential stubs and mount into container
+    if (config.credentialStubs?.length) {
+      for (const stub of config.credentialStubs) {
+        const hostPath = writeCredentialStub(
+          stub.containerPath,
+          stub.content,
+        );
+        args.push("-v", `${hostPath}:${stub.containerPath}:ro`);
       }
     }
 
